@@ -1,27 +1,32 @@
 package frc2025.subsystems.superstructure;
 
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.util.Units;
-import frc2025.constants.FieldConstants;
-import frc2025.subsystems.superstructure.wrist.WristConstants;
+import frc2025.subsystems.superstructure.elevator.Elevator.ElevatorGoal;
+import frc2025.subsystems.superstructure.wrist.Wrist.WristGoal;
 
 public class SuperstructureConstants {
-  public static final Translation2d SCORE_OFFSET =
-      new Translation2d(Units.inchesToMeters(1.5), Units.inchesToMeters(1.5));
 
-  public enum SuperstructurePosition {
-    HOME(new Translation2d(0, WristConstants.MANIPULATOR_LENGTH.getMeters()), false),
-    IDLE(new Translation2d(Units.inchesToMeters(10.71), Units.inchesToMeters(27.31)), false),
-    REEF_L2(FieldConstants.BRANCH_L2.plus(SCORE_OFFSET), true),
-    REEF_L3(FieldConstants.BRANCH_L3.plus(SCORE_OFFSET), true),
-    REEF_L4(FieldConstants.BRANCH_L4.plus(SCORE_OFFSET), true);
+  public enum SuperstructureState {
+    HOME(ElevatorGoal.HOME, WristGoal.STOW_CCW90),
+    IDLE_NONE(ElevatorGoal.IDLE, WristGoal.IDLE_NONE),
+    IDLE_CORAL(ElevatorGoal.IDLE_CORAL, WristGoal.IDLE_CORAL),
+    IDLE_ALGAE(ElevatorGoal.IDLE, WristGoal.IDLE_ALGAE),
+    REEF_L2(ElevatorGoal.L2, WristGoal.REEF_L1_L3),
+    REEF_L3(ElevatorGoal.L3, WristGoal.REEF_L1_L3),
+    REEF_L4(ElevatorGoal.L4, WristGoal.REEF_L4),
+    REEF_ALGAE_L1(ElevatorGoal.CLEAR_ALGAE_L1, WristGoal.CLEAR_ALGAE),
+    REEF_ALGAE_L2(ElevatorGoal.CLEAR_ALGAE_L2, WristGoal.CLEAR_ALGAE),
+    CORAL_STATION(ElevatorGoal.CORAL_STATION, WristGoal.STATION),
+    BARGE_NET(ElevatorGoal.BARGE, WristGoal.BARGE),
+    HANDOFF(ElevatorGoal.HANDOFF, WristGoal.HANDOFF),
+    PROCESSOR(ElevatorGoal.IDLE, WristGoal.IDLE_ALGAE),
+    CLIMB(ElevatorGoal.HOME, WristGoal.IDLE_ALGAE);
 
-    public final Translation2d position;
-    public final boolean elbowDown;
+    public WristGoal wristGoal;
+    public ElevatorGoal elevatorGoal;
 
-    private SuperstructurePosition(Translation2d position, boolean elbowDown) {
-      this.position = position;
-      this.elbowDown = elbowDown;
+    private SuperstructureState(ElevatorGoal elevatorGoal, WristGoal wristGoal) {
+      this.wristGoal = wristGoal;
+      this.elevatorGoal = elevatorGoal;
     }
   }
 }

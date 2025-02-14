@@ -48,8 +48,7 @@ public final class ElevatorConstants {
           MAX_HEIGHT.plus(Length.fromInches(0.875)).getMeters(),
           false,
           0.0);
-  public static final ScreamPIDConstants SIM_GAINS =
-      new ScreamPIDConstants(REDUCTION * 0.7, 0.0, 0.0);
+  public static final ScreamPIDConstants SIM_GAINS = new ScreamPIDConstants(5.0, 0.0, 0.0);
 
   public static final TalonFXSubsystemConfiguration CONFIGURATION =
       new TalonFXSubsystemConfiguration();
@@ -58,16 +57,16 @@ public final class ElevatorConstants {
     CONFIGURATION.name = "Elevator";
 
     CONFIGURATION.codeEnabled = true;
-    CONFIGURATION.logTelemetry = false;
+    CONFIGURATION.logTelemetry = true;
     CONFIGURATION.debugMode = false;
 
     CONFIGURATION.simConstants =
         new TalonFXSubsystemSimConstants(
-            new SimWrapper(SIM),
-            SIM_GAINS.getProfiledPIDController(new Constraints(50.0 * REDUCTION, 0.0)),
-            false,
+            new SimWrapper(SIM, PULLEY_CIRCUMFERENCE, REDUCTION),
+            REDUCTION,
+            SIM_GAINS.getProfiledPIDController(new Constraints(1.5, 1)),
             true,
-            false);
+            true);
 
     CONFIGURATION.masterConstants =
         new TalonFXConstants(
@@ -92,6 +91,6 @@ public final class ElevatorConstants {
         new ScreamPIDConstants(50.0, 0, 0)
             .getSlot0Configs(
                 new FeedforwardConstants(0, 0, 0.3, 0, GravityTypeValue.Elevator_Static));
-    CONFIGURATION.positionThreshold = 0.5;
+    CONFIGURATION.positionThreshold = Elevator.heightToRotations(Length.fromInches(5.0));
   }
 }

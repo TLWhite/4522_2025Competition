@@ -1,8 +1,5 @@
 package frc2025.subsystems.superstructure.wrist;
 
-import static edu.wpi.first.units.Units.KilogramSquareMeters;
-import static edu.wpi.first.units.Units.Pounds;
-
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -18,7 +15,6 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
-import math.ScreamMath;
 import pid.ScreamPIDConstants;
 import pid.ScreamPIDConstants.FeedforwardConstants;
 import sim.SimWrapper;
@@ -31,22 +27,19 @@ public class WristConstants {
   public static final double WRIST_REDUCTION = 30.0;
   public static final double ROLLERS_REDUCTION = 2.25;
 
+  public static final double ACQUIRED_PIECE_THRESHOLD = 0.0;
+
   public static final SingleJointedArmSim SIM =
       new SingleJointedArmSim(
           DCMotor.getKrakenX60(1),
           WRIST_REDUCTION,
-          ScreamMath.parallelAxisTheorem(
-                      KilogramSquareMeters.of(0.0951567339),
-                      Pounds.of(4.6028013),
-                      Length.fromInches(12.024525))
-                  .in(KilogramSquareMeters)
-              - 0.002,
+          0.00490209781964,
           Units.inchesToMeters(20.5),
-          Units.rotationsToRadians(-9999),
-          Units.rotationsToRadians(9999),
-          true,
-          0);
-  public static final ScreamPIDConstants SIM_GAINS = new ScreamPIDConstants(425.0, 0.0, 0.0);
+          -Double.MAX_VALUE,
+          Double.MAX_VALUE,
+          false,
+          Math.PI / 2.0);
+  public static final ScreamPIDConstants SIM_GAINS = new ScreamPIDConstants(50.0, 0.0, 50.0);
 
   public static final TalonFXSubsystemConfiguration WRIST_CONFIG =
       new TalonFXSubsystemConfiguration();
@@ -55,16 +48,16 @@ public class WristConstants {
     WRIST_CONFIG.name = "Wrist";
 
     WRIST_CONFIG.codeEnabled = true;
-    WRIST_CONFIG.logTelemetry = true;
+    WRIST_CONFIG.logTelemetry = false;
     WRIST_CONFIG.debugMode = false;
 
     WRIST_CONFIG.simConstants =
         new TalonFXSubsystemSimConstants(
-            new SimWrapper(SIM),
-            SIM_GAINS.getProfiledPIDController(new Constraints(20.0, 15.0), -0.5, 0.5),
+            new SimWrapper(SIM, WRIST_REDUCTION),
+            WRIST_REDUCTION,
+            SIM_GAINS.getProfiledPIDController(new Constraints(0.5, 0.1)),
             true,
-            false,
-            false);
+            true);
 
     WRIST_CONFIG.masterConstants =
         new TalonFXConstants(new CANDevice(14), InvertedValue.Clockwise_Positive);
@@ -77,8 +70,7 @@ public class WristConstants {
 
     WRIST_CONFIG.neutralMode = NeutralModeValue.Brake;
     WRIST_CONFIG.rotorToSensorRatio = WRIST_REDUCTION;
-    WRIST_CONFIG.feedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
-    WRIST_CONFIG.continuousWrap = true;
+    WRIST_CONFIG.feedbackSensorSource = FeedbackSensorSourceValue.SyncCANcoder;
     WRIST_CONFIG.feedbackRemoteSensorId = 4;
     WRIST_CONFIG.enableSupplyCurrentLimit = true;
     WRIST_CONFIG.supplyCurrentLimit = 40;
@@ -86,7 +78,7 @@ public class WristConstants {
     WRIST_CONFIG.acceleration = 1.0;
     WRIST_CONFIG.slot0 =
         new ScreamPIDConstants(1.0, 0, 0).getSlot0Configs(new FeedforwardConstants());
-    WRIST_CONFIG.positionThreshold = 0.025;
+    WRIST_CONFIG.positionThreshold = Units.degreesToRotations(22.5);
   }
 
   public static final TalonFXSubsystemConfiguration ROLLERS_CONFIG =

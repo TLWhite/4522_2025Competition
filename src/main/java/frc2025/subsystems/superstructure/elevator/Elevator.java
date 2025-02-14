@@ -3,38 +3,40 @@ package frc2025.subsystems.superstructure.elevator;
 import data.Length;
 import drivers.TalonFXSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import frc2025.logging.Logger;
 import java.util.function.DoubleSupplier;
 import math.Conversions;
 
 public class Elevator extends TalonFXSubsystem {
 
-  private static DoubleSupplier solverOutput = () -> 0.0;
-
   public Elevator(TalonFXSubsystemConfiguration config) {
-    super(config, ElevatorGoal.SOLVER);
+    super(config);
   }
 
-  private enum ElevatorGoal implements TalonFXSubsystemGoal {
-    SOLVER(() -> solverOutput.getAsDouble());
-    /* HOME(Length.fromInches(0)),
+  public enum ElevatorGoal implements TalonFXSubsystemGoal {
+    HOME(Length.fromInches(0)),
     IDLE(Length.fromInches(12.01875)),
+    IDLE_ALGAE(Length.fromInches(12.01875)),
+    IDLE_CORAL(Length.fromInches(20.0)),
     TROUGH(Length.fromInches(18.42)),
     L2(Length.fromInches(29.1)),
     L3(Length.fromInches(44.8)),
     L4(Length.fromInches(74.56)),
-    CLEAR_ALGAE_L1(new Length()),
-    CLEAR_ALGAE_L2(new Length()),
+    CLEAR_ALGAE_L1(Length.fromInches(30.0)),
+    CLEAR_ALGAE_L2(Length.fromInches(45.5)),
     CORAL_STATION(Length.fromInches(18.2)),
-    HANDOFF(new Length()),
+    HANDOFF(Length.fromInches(18.2)),
     BARGE(ElevatorConstants.MAX_HEIGHT),
-    MAX(ElevatorConstants.MAX_HEIGHT); */
+    MAX_CARRIAGE(Length.fromInches(24.04)),
+    MAX(ElevatorConstants.MAX_HEIGHT);
 
-    public final DoubleSupplier targetRotations;
+    public DoubleSupplier targetRotations;
 
-    private ElevatorGoal(DoubleSupplier targetRotations) {
-      this.targetRotations = targetRotations;
+    private ElevatorGoal(Length targetHeight) {
+      this.targetRotations =
+          () ->
+              Conversions.linearDistanceToRotations(
+                  targetHeight, ElevatorConstants.PULLEY_CIRCUMFERENCE);
     }
 
     @Override
@@ -46,10 +48,22 @@ public class Elevator extends TalonFXSubsystem {
     public DoubleSupplier target() {
       return targetRotations;
     }
+
+    @Override
+    public DoubleSupplier feedForward() {
+      return () -> 0.0;
+    }
   }
 
-  public Command setSolverOutput(DoubleSupplier output) {
-    return Commands.run(() -> solverOutput = output);
+  @Override
+  public synchronized Command applyGoalCommand(TalonFXSubsystemGoal goal) {
+    return super.applyGoalCommand(goal).beforeStarting(() -> super.goal = goal);
+  }
+
+  public Command applyUntilAtGoalCommand(ElevatorGoal goal) {
+    return super.applyGoalCommand(goal)
+        .until(() -> atGoal())
+        .beforeStarting(() -> super.goal = goal);
   }
 
   public Length getMeasuredHeight() {
@@ -64,14 +78,12 @@ public class Elevator extends TalonFXSubsystem {
     return Conversions.linearDistanceToRotations(height, ElevatorConstants.PULLEY_CIRCUMFERENCE);
   }
 
-  @Override
-  public synchronized void setSimState(double position, double velocity) {
-    super.setSimState(
-        heightToRotations(Length.fromMeters(position)) * ElevatorConstants.REDUCTION,
-        Conversions.mpsToRPS(
-            velocity,
-            ElevatorConstants.PULLEY_CIRCUMFERENCE.getMeters(),
-            ElevatorConstants.REDUCTION));
+  public void resetSimController() {
+    simController.reset(getPosition(), getVelocity());
+  }
+
+  public void setGoal(ElevatorGoal goal) {
+    super.goal = goal;
   }
 
   @Override
@@ -81,5 +93,8 @@ public class Elevator extends TalonFXSubsystem {
     Logger.log(
         logPrefix + "AbsHeight",
         getMeasuredHeight().plus(ElevatorConstants.MIN_HEIGHT_FROM_FLOOR).getInches());
+    Logger.log(
+        logPrefix + "ErrorHeight",
+        Length.fromRotations(getError(), ElevatorConstants.PULLEY_CIRCUMFERENCE).getInches());
   }
 }
